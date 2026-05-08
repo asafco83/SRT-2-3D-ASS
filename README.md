@@ -1,4 +1,5 @@
 # SRT 2 3D ASS
+<img width="1701" height="1030" alt="SRT23DASS" src="https://github.com/user-attachments/assets/eadd54de-8cbb-4edf-94b2-07727a3d116b" />
 
 **SRT 2 3D ASS** is a professional-grade, Electron-based desktop application designed to convert standard `.srt` subtitles into stereoscopically accurate `.ass` formats for 3D video playback.
 
