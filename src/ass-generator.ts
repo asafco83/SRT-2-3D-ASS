@@ -10,18 +10,9 @@ export function msToAssTime(ms: number): string {
   return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(cs).padStart(2, '0')}`;
 }
 
-function computePlayRes(config: AssConfig, singleEye: boolean): { x: number; y: number } {
-  // Anamorphic squeeze of the encoding (half-sbs / half-tab) is handled by
-  // doubling the PlayRes coordinate space along the squeezed axis. This correctly
-  // scales the font glyphs, character spacing, and outline thicknesses perfectly
-  // without relying on ScaleX/ScaleY tags.
-  let x = config.videoWidth;
-  let y = config.videoHeight;
-  if (!singleEye) {
-    if (config.stereoscopyMode === 'half-sbs') x *= 2;
-    if (config.stereoscopyMode === 'half-tab') y *= 2;
-  }
-  return { x, y };
+function computePlayRes(config: AssConfig): { x: number; y: number } {
+  // Always use the true video resolution so coordinates map 1:1.
+  return { x: config.videoWidth, y: config.videoHeight };
 }
 
 // ASS hex colour format is &HBBGGRR&. Pure red in BGR is 0000FF; cyan = FFFF00.
@@ -44,7 +35,7 @@ export function generateAss(
   // false — it needs the two-sub full-SBS-frame layout.
   singleEye = false,
 ): string {
-  const { x: playResX, y: playResY } = computePlayRes(config, singleEye);
+  const { x: playResX, y: playResY } = computePlayRes(config);
 
   const scriptInfo = [
     '[Script Info]',
@@ -59,11 +50,14 @@ export function generateAss(
   const formatLine =
     'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding';
 
-  // Anamorphic compensation is now handled by the PlayRes grid directly mapping
-  // to the unsqueezed video dimensions, which correctly squishes text, outlines,
-  // and spacing seamlessly without needing ScaleX/ScaleY hacks.
-  const effectiveScaleX = config.scaleX;
-  const effectiveScaleY = config.scaleY;
+  let effectiveScaleX = config.scaleX;
+  let effectiveScaleY = config.scaleY;
+  
+  // Pre-squeeze font width/height to counteract 3D TV stretching
+  if (!singleEye) {
+    if (config.stereoscopyMode === 'half-sbs') effectiveScaleX = config.scaleX * 0.5;
+    if (config.stereoscopyMode === 'half-tab') effectiveScaleY = config.scaleY * 0.5;
+  }
 
   const styleLine =
     `Style: Default,${config.fontName},${config.fontSize},` +
@@ -96,41 +90,36 @@ export function generateAss(
     const text = cue.lines.join('\\N');
 
     const isTab = config.stereoscopyMode === 'half-tab' || config.stereoscopyMode === 'full-tab';
-    const leftPrefix  = anaglyphPreview ? ANAGLYPH_LEFT_OVERRIDE  : '';
-    const rightPrefix = anaglyphPreview ? ANAGLYPH_RIGHT_OVERRIDE : '';
+    
+    // We strictly force the scale using inline tags (\fscx, \fscy). 
+    // This physically overrides any stubborn player settings.
+    const scaleTags = `{\\fscx${effectiveScaleX}\\fscy${effectiveScaleY}}`;
+    const leftPrefix  = (anaglyphPreview ? ANAGLYPH_LEFT_OVERRIDE  : '') + scaleTags;
+    const rightPrefix = (anaglyphPreview ? ANAGLYPH_RIGHT_OVERRIDE : '') + scaleTags;
 
     const wantLeft  = eyeFilter !== 'right';
     const wantRight = eyeFilter !== 'left';
 
-    const scaleX = playResX / config.videoWidth;
-    const scaleY = playResY / config.videoHeight;
-    const halfDepth = (config.depthOffset / 2) * scaleX;
-    const halfVert  = (config.verticalOffset / 2) * scaleY;
+    const halfDepth = config.depthOffset / 2;
+    const halfVert  = config.verticalOffset / 2;
 
     let leftX: number, rightX: number, leftY: number, rightY: number;
 
     if (singleEye) {
-      // Per-eye preview: the lavfi pipeline already crops & unsqueezes the
-      // visible eye to the full visible frame. Center the sub horizontally
-      // with a depth shift; marginV maps directly to display-pixels.
       const subY = playResY - config.marginV;
       leftX  = Math.round(playResX / 2 - halfDepth);
       rightX = Math.round(playResX / 2 + halfDepth);
       leftY  = subY - Math.round(halfVert);
       rightY = subY + Math.round(halfVert);
     } else if (isTab) {
-      // Export — TAB: top eye in upper half of encoded frame, bottom eye in
-      // lower half. With PlayResY doubled for half-tab, the top eye spans
-      // 0 to playResY / 2.
-      const effMargin = config.marginV * scaleY;
+      const isHalfTab = config.stereoscopyMode === 'half-tab';
+      const effMargin = isHalfTab ? config.marginV / 2 : config.marginV;
       leftX  = Math.round(playResX / 2 - halfDepth);
       rightX = Math.round(playResX / 2 + halfDepth);
-      leftY  = Math.round(playResY / 2 - effMargin - halfVert);  // bottom of top eye
-      rightY = Math.round(playResY - effMargin + halfVert);      // bottom of bottom eye
+      leftY  = Math.round(playResY / 2 - effMargin - halfVert);
+      rightY = Math.round(playResY - effMargin + halfVert);
     } else {
-      // Export — SBS: each eye occupies a horizontal half. playResX/4 and
-      // 3*playResX/4 land at the centers of the two eye-frames.
-      const baseY = playResY - (config.marginV * scaleY);
+      const baseY = playResY - config.marginV;
       leftX  = Math.round(playResX / 4 - halfDepth);
       rightX = Math.round(3 * playResX / 4 + halfDepth);
       leftY  = Math.round(baseY - halfVert);
