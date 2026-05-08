@@ -1,0 +1,46 @@
+{
+  "name": "srt3d-converter",
+  "version": "0.1.0",
+  "author": "Asaf",
+  "description": "Convert SRT subtitles to 3D SBS ASS format",
+  "private": true,
+  "main": "out/main/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build:app": "electron-vite build",
+    "build": "tsc",
+    "pack": "electron-vite build && electron-builder --dir",
+    "dist": "electron-vite build && electron-builder",
+    "test": "tsc && node --test \"dist/test/*.test.js\"",
+    "demo": "tsc && node dist/test/demo.js"
+  },
+  "build": {
+    "appId": "com.srt23dass.app",
+    "productName": "SRT 2 3D ASS",
+    "directories": {
+      "output": "dist",
+      "buildResources": "resources"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^4.7.0",
+    "electron": "^42.0.0",
+    "electron-builder": "^26.8.1",
+    "electron-vite": "^5.0.0",
+    "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
+  }
+}

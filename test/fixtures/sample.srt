@@ -1,0 +1,18 @@
+1
+00:00:01,000 --> 00:00:04,500
+Hello, world!
+This is a <b>bold</b> test.
+
+2
+00:00:05,250 --> 00:00:08,000
+<i>Italics work too</i>
+
+3
+00:01:02,123 --> 00:01:05,456
+<font color="#FF0000">Red text</font>
+on multiple lines
+with <u>underline</u>
+
+4
+00:59:59,900 --> 01:00:02,100
+End of sample.

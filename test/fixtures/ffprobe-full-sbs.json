@@ -1,0 +1,16 @@
+{
+  "streams": [
+    {
+      "codec_type": "video",
+      "codec_name": "h264",
+      "width": 3840,
+      "height": 1080,
+      "display_aspect_ratio": "16:9",
+      "avg_frame_rate": "25/1",
+      "tags": {
+        "stereo_mode": "11"
+      }
+    }
+  ],
+  "format": {}
+}
