@@ -3,6 +3,7 @@ import { extname } from 'node:path';
 import { spawnAsync, spawnAsyncStreaming } from './binary-runner.js';
 
 export interface TrackSelection {
+  video: number[];
   audio: number[];      // track IDs from source to include
   subtitles: number[];  // track IDs from source to include
 }
@@ -27,21 +28,18 @@ export interface MuxOptions {
   onProgress?: (percent: number) => void;
 }
 
-export function getSafeOutputPath(desired: string): string {
-  if (!existsSync(desired)) return desired;
-  const ext = extname(desired);
-  const base = desired.slice(0, desired.length - ext.length);
-  let n = 2;
-  while (existsSync(`${base}_${n}${ext}`)) n++;
-  return `${base}_${n}${ext}`;
-}
-
 // Pure arg builder — testable without a binary.
 export function buildMuxArgs(opts: MuxOptions, safePath: string): string[] {
   const { videoPath, assPath, language, trackName, isDefault, isForced,
           includeTracks, trackNameOverrides, onProgress } = opts;
   const args: string[] = ['--output', safePath];
   if (onProgress) args.push('--gui-mode');
+
+  if (includeTracks.video.length > 0) {
+    args.push('--video-tracks', includeTracks.video.join(','));
+  } else {
+    args.push('--no-video');
+  }
 
   if (includeTracks.audio.length > 0) {
     args.push('--audio-tracks', includeTracks.audio.join(','));
@@ -76,7 +74,10 @@ export function buildMuxArgs(opts: MuxOptions, safePath: string): string[] {
 }
 
 export async function muxToMkv(opts: MuxOptions): Promise<string> {
-  const safePath = getSafeOutputPath(opts.outputPath);
+  if (opts.outputPath === opts.videoPath) {
+    throw new Error('Cannot overwrite the source video file while reading it.');
+  }
+  const safePath = opts.outputPath;
   const args = buildMuxArgs(opts, safePath);
   const result = opts.onProgress
     ? await spawnAsyncStreaming(opts.mkvmergeBin, args, (line) => {

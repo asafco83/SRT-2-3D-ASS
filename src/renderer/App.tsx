@@ -58,6 +58,7 @@ const defaultMuxOptions: MuxOptions = {
   trackNameTouched:   false,
   isDefault:          false,
   isForced:           false,
+  selectedVideo:      new Set(),
   selectedAudio:      new Set(),
   selectedSubs:       new Set(),
   trackNameOverrides: new Map(),
@@ -144,12 +145,14 @@ export function App() {
     setTimeout(() => setStatus({ msg: '', kind: '' }), 4000);
   };
 
-  // When tracks load, default-include all audio + subtitle source tracks
+  // When tracks load, default-include all source tracks
   useEffect(() => {
     setMuxOpts(o => ({
       ...o,
+      selectedVideo: new Set(tracks.filter(t => t.type === 'video').map(t => t.index)),
       selectedAudio: new Set(tracks.filter(t => t.type === 'audio').map(t => t.index)),
       selectedSubs:  new Set(tracks.filter(t => t.type === 'subtitle').map(t => t.index)),
+      trackNameOverrides: new Map(),
     }));
   }, [tracks]);
 
@@ -228,6 +231,7 @@ export function App() {
         isDefault:    muxOpts.isDefault,
         isForced:     muxOpts.isForced,
         includeTracks: {
+          video:     Array.from(muxOpts.selectedVideo),
           audio:     Array.from(muxOpts.selectedAudio),
           subtitles: Array.from(muxOpts.selectedSubs),
         },
@@ -307,6 +311,7 @@ export function App() {
         timeMs={timeMs}
         durationMs={durationMs}
         tracks={tracks}
+        trackNameOverrides={muxOpts.trackNameOverrides}
         metadata={metadata}
         anaglyphPreview={anaglyphPreview}
         onAnaglyphChange={setAnaglyphPreview}

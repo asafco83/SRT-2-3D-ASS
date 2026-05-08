@@ -90,6 +90,7 @@ export interface MuxRequest {
   isDefault: boolean;
   isForced: boolean;
   includeTracks: {
+    video: number[];
     audio: number[];
     subtitles: number[];
   };
@@ -109,6 +110,7 @@ export interface ExportMkvRequest {
   isDefault: boolean;
   isForced: boolean;
   includeTracks: {
+    video: number[];
     audio: number[];
     subtitles: number[];
   };

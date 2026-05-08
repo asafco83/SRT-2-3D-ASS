@@ -6,6 +6,7 @@ export interface MuxOptions {
   trackNameTouched: boolean;       // user typed in the new-sub name field
   isDefault: boolean;
   isForced: boolean;
+  selectedVideo: Set<number>;
   selectedAudio: Set<number>;
   selectedSubs: Set<number>;
   trackNameOverrides: Map<number, string>;  // source-track index → custom name
@@ -118,11 +119,13 @@ export function MuxPanel({ tracks, options, onChange }: Props) {
 
   const renderRow = (t: TrackInfo, locked: boolean) => {
     const checked = locked ? true
+      : t.type === 'video'    ? options.selectedVideo.has(t.index)
       : t.type === 'audio'    ? options.selectedAudio.has(t.index)
       : t.type === 'subtitle' ? options.selectedSubs.has(t.index)
       : true;
     const onCheck = (e: React.ChangeEvent<HTMLInputElement>) => {
       if (locked) return;
+      if (t.type === 'video') upd('selectedVideo', toggleSet(options.selectedVideo, t.index, e.target.checked));
       if (t.type === 'audio') upd('selectedAudio', toggleSet(options.selectedAudio, t.index, e.target.checked));
       if (t.type === 'subtitle') upd('selectedSubs',  toggleSet(options.selectedSubs,  t.index, e.target.checked));
     };
@@ -158,7 +161,7 @@ export function MuxPanel({ tracks, options, onChange }: Props) {
         <div className="card-title">Tracks to include</div>
         {tracks.length > 0 ? (
           <div className="tracks-table">
-            {videoTracks.map(t => renderRow(t, true))}
+            {videoTracks.map(t => renderRow(t, false))}
             {audioTracks.map(t => renderRow(t, false))}
             {subTracks.map(t => renderRow(t, false))}
             {/* New 3D ASS subtitle row */}

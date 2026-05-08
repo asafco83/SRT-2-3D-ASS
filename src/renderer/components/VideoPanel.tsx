@@ -9,6 +9,7 @@ interface Props {
   timeMs: number;
   durationMs: number;
   tracks: TrackInfo[];
+  trackNameOverrides: Map<number, string>;
   metadata: VideoMetadata | null;
   anaglyphPreview: boolean;
   onAnaglyphChange: (v: boolean) => void;
@@ -31,18 +32,19 @@ function defaultTrackIndex(tracks: TrackInfo[], type: 'video' | 'audio'): number
   return (filtered.find(t => t.isDefault) ?? filtered[0]).index;
 }
 
-function trackLabel(t: TrackInfo): string {
+function trackLabel(t: TrackInfo, overrides: Map<number, string>): string {
   const bits: string[] = [`#${t.index}`, t.codec];
   if (t.type === 'video' && t.width && t.height) bits.push(`${t.width}×${t.height}`);
   if (t.type === 'audio' && t.channels)          bits.push(`${t.channels}ch`);
   if (t.language) bits.push(t.language);
-  if (t.title)    bits.push(`"${t.title}"`);
+  const name = overrides.get(t.index) ?? t.title;
+  if (name) bits.push(`"${name}"`);
   return bits.join(' ');
 }
 
 export function VideoPanel({
   videoPath, config, onConfigChange, cues, timeMs, durationMs, tracks,
-  metadata, anaglyphPreview, onAnaglyphChange, onSeek, onDurationDetected,
+  trackNameOverrides, metadata, anaglyphPreview, onAnaglyphChange, onSeek, onDurationDetected,
 }: Props) {
   const playingRef = useRef(false);
   // Last time-pos value mpv reported. Used to break the seek echo loop.
@@ -173,7 +175,7 @@ export function VideoPanel({
                   <span>Video</span>
                   <select value={vStream ?? ''} onChange={e => setVStream(parseInt(e.target.value))}>
                     {videoTracks.map(t => (
-                      <option key={t.index} value={t.index}>{trackLabel(t)}</option>
+                      <option key={t.index} value={t.index}>{trackLabel(t, trackNameOverrides)}</option>
                     ))}
                   </select>
                 </label>
@@ -183,7 +185,7 @@ export function VideoPanel({
                   <span>Audio</span>
                   <select value={aStream ?? ''} onChange={e => setAStream(parseInt(e.target.value))}>
                     {audioTracks.map(t => (
-                      <option key={t.index} value={t.index}>{trackLabel(t)}</option>
+                      <option key={t.index} value={t.index}>{trackLabel(t, trackNameOverrides)}</option>
                     ))}
                   </select>
                 </label>
