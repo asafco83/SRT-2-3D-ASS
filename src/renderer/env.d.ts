@@ -1,9 +1,5 @@
-import type { Api } from '../preload/index.js';
-
-declare global {
-  interface Window {
-    api: Api;
-  }
+interface Window {
+  api: import('../preload/index.js').Api;
 }
 
 declare module '*.png' {

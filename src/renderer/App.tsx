@@ -1,3 +1,4 @@
+/// <reference path="./env.d.ts" />
 import { useState, useCallback, useEffect } from 'react';
 import type { AssConfig, SrtCue, VideoMetadata, TrackInfo, ExportMkvRequest } from '../types.js';
 import { defaultConfig, inferConfigFromMetadata } from '../types.js';

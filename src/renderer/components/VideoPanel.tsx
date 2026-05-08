@@ -1,3 +1,4 @@
+/// <reference path="../env.d.ts" />
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AssConfig, SrtCue, TrackInfo, VideoMetadata } from '../../types.js';
 
