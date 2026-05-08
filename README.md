@@ -6,7 +6,7 @@
 Built for simplicity and precision, it auto-detects your video's 3D format, seamlessly applies anamorphic aspect ratio correction, and allows you to instantly mux the perfect 3D subtitles directly into a brand new MKV file—without any video re-encoding!
 
 <img width="1701" height="1030" alt="SRT23DASS" src="https://github.com/user-attachments/assets/eadd54de-8cbb-4edf-94b2-07727a3d116b" />
----
+
 
 ## ✨ Features
 
