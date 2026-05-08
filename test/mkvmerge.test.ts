@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { writeFileSync, unlinkSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { buildMuxArgs, getSafeOutputPath, muxToMkv } from '../src/mkvmerge.js';
+import { buildMuxArgs, muxToMkv } from '../src/mkvmerge.js';
 
 function baseOpts(overrides: Partial<Parameters<typeof buildMuxArgs>[0]> = {}) {
   return {
@@ -15,44 +15,10 @@ function baseOpts(overrides: Partial<Parameters<typeof buildMuxArgs>[0]> = {}) {
     trackName: 'English 3D SBS',
     isDefault: false,
     isForced: false,
-    includeTracks: { audio: [1], subtitles: [] },
+    includeTracks: { video: [], audio: [1], subtitles: [] },
     ...overrides,
   };
 }
-
-// ── getSafeOutputPath ─────────────────────────────────────────────────────────
-
-test('getSafeOutputPath: returns desired path when file does not exist', () => {
-  const p = join(tmpdir(), `srt3d-safe-${Date.now()}-nonexistent.mkv`);
-  assert.equal(getSafeOutputPath(p), p);
-});
-
-test('getSafeOutputPath: appends _2 when file exists', () => {
-  const p = join(tmpdir(), `srt3d-safe-${Date.now()}.mkv`);
-  writeFileSync(p, '');
-  try {
-    const safe = getSafeOutputPath(p);
-    assert.match(safe, /_2\.mkv$/);
-    assert.notEqual(safe, p);
-  } finally {
-    unlinkSync(p);
-  }
-});
-
-test('getSafeOutputPath: increments past _2 when _2 also exists', () => {
-  const base = join(tmpdir(), `srt3d-safe-${Date.now()}`);
-  const p1 = `${base}.mkv`;
-  const p2 = `${base}_2.mkv`;
-  writeFileSync(p1, '');
-  writeFileSync(p2, '');
-  try {
-    const safe = getSafeOutputPath(p1);
-    assert.match(safe, /_3\.mkv$/);
-  } finally {
-    unlinkSync(p1);
-    unlinkSync(p2);
-  }
-});
 
 // ── buildMuxArgs ──────────────────────────────────────────────────────────────
 
@@ -63,25 +29,25 @@ test('buildMuxArgs: output path is first positional arg after --output', () => {
 });
 
 test('buildMuxArgs: includes specified audio tracks', () => {
-  const args = buildMuxArgs(baseOpts({ includeTracks: { audio: [1, 2], subtitles: [] } }), '/o.mkv');
+  const args = buildMuxArgs(baseOpts({ includeTracks: { video: [], audio: [1, 2], subtitles: [] } }), '/o.mkv');
   const idx = args.indexOf('--audio-tracks');
   assert.ok(idx !== -1);
   assert.equal(args[idx + 1], '1,2');
 });
 
 test('buildMuxArgs: --no-audio when audio list empty', () => {
-  const args = buildMuxArgs(baseOpts({ includeTracks: { audio: [], subtitles: [] } }), '/o.mkv');
+  const args = buildMuxArgs(baseOpts({ includeTracks: { video: [], audio: [], subtitles: [] } }), '/o.mkv');
   assert.ok(args.includes('--no-audio'));
   assert.ok(!args.includes('--audio-tracks'));
 });
 
 test('buildMuxArgs: --no-subtitles when subtitle list empty', () => {
-  const args = buildMuxArgs(baseOpts({ includeTracks: { audio: [1], subtitles: [] } }), '/o.mkv');
+  const args = buildMuxArgs(baseOpts({ includeTracks: { video: [], audio: [1], subtitles: [] } }), '/o.mkv');
   assert.ok(args.includes('--no-subtitles'));
 });
 
 test('buildMuxArgs: includes subtitle tracks when specified', () => {
-  const args = buildMuxArgs(baseOpts({ includeTracks: { audio: [1], subtitles: [2] } }), '/o.mkv');
+  const args = buildMuxArgs(baseOpts({ includeTracks: { video: [], audio: [1], subtitles: [2] } }), '/o.mkv');
   const idx = args.indexOf('--subtitle-tracks');
   assert.ok(idx !== -1);
   assert.equal(args[idx + 1], '2');
@@ -172,7 +138,7 @@ test('muxToMkv: integration with real mkvmerge', { skip: MKVMERGE_PATH === null 
         trackName: 'Test',
         isDefault: false,
         isForced: false,
-        includeTracks: { audio: [], subtitles: [] },
+        includeTracks: { video: [], audio: [], subtitles: [] },
       }),
       /mkvmerge failed/,
     );

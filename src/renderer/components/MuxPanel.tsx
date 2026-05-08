@@ -1,3 +1,4 @@
+import type React from 'react';
 import type { TrackInfo } from '../../types.js';
 
 export interface MuxOptions {
