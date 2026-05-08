@@ -38,7 +38,7 @@ Built for simplicity and precision, it auto-detects your video's 3D format, seam
 
 ## 📥 Download & Installation
 
-You can download the application from the [Releases]([/releases](https://github.com/asafco83/SRT-2-3D-ASS/releases/latest)) page. We provide two different versions for Windows users—choose the one that best fits your needs:
+You can download the application from the [Releases](https://github.com/asafco83/SRT-2-3D-ASS/releases/latest) page. We provide two different versions for Windows users—choose the one that best fits your needs:
 
 - **`SRT 2 3D ASS Setup X.X.X.exe` (Installer)**
   Download this if you want to permanently install the application on your computer. It will add shortcuts to your Start Menu and Desktop, and properly integrate the app into your system.
