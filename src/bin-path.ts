@@ -12,8 +12,14 @@ function platformSubdir(): string {
 
 export function getBinPath(name: string): string {
   const ext = process.platform === 'win32' ? '.exe' : '';
-  const local = join(repoRoot, 'bin', platformSubdir(), name + ext);
-  if (existsSync(local)) return local;
-  // In a packaged Electron app this will be overridden; for now throw early.
-  throw new Error(`Binary not found: ${local} — place ${name}${ext} in bin/${platformSubdir()}/`);
+  
+  // Packaged app path (electron-builder places extraResources in process.resourcesPath)
+  const packagedPath = process.resourcesPath ? join(process.resourcesPath, 'bin', platformSubdir(), name + ext) : '';
+  if (packagedPath && existsSync(packagedPath)) return packagedPath;
+
+  // Local development path
+  const localPath = join(repoRoot, 'bin', platformSubdir(), name + ext);
+  if (existsSync(localPath)) return localPath;
+
+  throw new Error(`Binary not found: ${name}${ext} — place it in bin/${platformSubdir()}/`);
 }

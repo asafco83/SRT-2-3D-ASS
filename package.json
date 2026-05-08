@@ -22,6 +22,12 @@
       "output": "dist",
       "buildResources": "resources"
     },
+    "extraResources": [
+      {
+        "from": "bin",
+        "to": "bin"
+      }
+    ],
     "win": {
       "target": [
         "nsis",

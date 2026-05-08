@@ -49,8 +49,23 @@ You can download the application from the [Releases](#) page. We provide two dif
 
 ## 🛠 Developer Setup
 
-If you wish to run the app in development mode:
+If you wish to run the app in development mode or build it from scratch, you must first manually provide the required media executables, as they are not tracked in Git.
 
-1. Install dependencies: `npm install`
-2. Start the dev server: `npm run dev`
-3. To compile the application: `npm run build:app`
+1. **Create the Binaries Folder:**
+   In the root of the project, create the following directory structure depending on your OS:
+   - Windows: `bin/win/`
+   - Mac: `bin/mac/`
+   - Linux: `bin/linux/`
+
+2. **Download Required Executables:**
+   Download the following standalone `.exe` files (or platform equivalents) and place them inside the folder you just created:
+   - **`ffmpeg.exe` & `ffprobe.exe`**: [Download from gyan.dev](https://www.gyan.dev/ffmpeg/builds/)
+   - **`mpv.exe`**: [Download from SourceForge](https://sourceforge.net/projects/mpv-player-windows/files/)
+   - **`mkvmerge.exe`**: [Download from MKVToolNix](https://mkvtoolnix.download/downloads.html)
+
+3. **Install Dependencies & Run:**
+   ```bash
+   npm install
+   npm run dev        # To start the dev server
+   npm run dist       # To compile the final .exe installer
+   ```
