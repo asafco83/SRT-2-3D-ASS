@@ -2,7 +2,7 @@
   "name": "srt3d-converter",
   "version": "0.1.2",
   "author": "Asaf",
-  "description": "Convert SRT subtitles to 3D SBS ASS format",
+  "description": "Convert SRT subtitles to 3D ASS format",
   "private": true,
   "main": "out/main/index.js",
   "type": "module",
