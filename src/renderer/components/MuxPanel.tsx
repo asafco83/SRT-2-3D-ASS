@@ -3,10 +3,21 @@ import type { TrackInfo } from '../../types.js';
 
 export interface MuxOptions {
   language: string;
-  trackName: string;
-  trackNameTouched: boolean;       // user typed in the new-sub name field
-  isDefault: boolean;
-  isForced: boolean;
+
+  include3D: boolean;
+  trackName3D: string;
+  trackName3DTouched: boolean;
+  isDefault3D: boolean;
+  isForced3D: boolean;
+
+  fileTitle: string;
+  
+  include2D: boolean;
+  trackName2D: string;
+  trackName2DTouched: boolean;
+  isDefault2D: boolean;
+  isForced2D: boolean;
+
   selectedVideo: Set<number>;
   selectedAudio: Set<number>;
   selectedSubs: Set<number>;
@@ -40,8 +51,10 @@ const LANG_CODES = [
 
 const LANG_LABEL = new Map(LANG_CODES.map(l => [l.code, l.label]));
 
-function defaultNameForLang(code: string): string {
-  return code === 'und' ? '3D SBS' : (LANG_LABEL.get(code) ?? code);
+function defaultNameForLang(code: string, is3D: boolean): string {
+  if (code === 'und') return is3D ? 'Subtitle 3D' : 'Subtitle';
+  const name = LANG_LABEL.get(code) ?? code;
+  return is3D ? `${name} 3D` : name;
 }
 
 function trackInfoLine(t: TrackInfo): string {
@@ -90,18 +103,49 @@ export function MuxPanel({ tracks, options, onChange }: Props) {
     onChange({
       ...options,
       language: code,
-      // Mirror language → trackName until the user has typed something custom.
-      trackName: options.trackNameTouched ? options.trackName : defaultNameForLang(code),
+      trackName3D: options.trackName3DTouched ? options.trackName3D : defaultNameForLang(code, true),
+      trackName2D: options.trackName2DTouched ? options.trackName2D : defaultNameForLang(code, false),
     });
   };
 
-  const onTrackNameChange = (name: string) => {
+  const onTrackNameChange = (name: string, is3D: boolean) => {
     if (name.trim() === '') {
-      // Clearing the field re-enables auto-mirroring from language.
-      onChange({ ...options, trackName: defaultNameForLang(options.language), trackNameTouched: false });
+      if (is3D) {
+        onChange({ ...options, trackName3D: defaultNameForLang(options.language, true), trackName3DTouched: false });
+      } else {
+        onChange({ ...options, trackName2D: defaultNameForLang(options.language, false), trackName2DTouched: false });
+      }
     } else {
-      onChange({ ...options, trackName: name, trackNameTouched: true });
+      if (is3D) {
+        onChange({ ...options, trackName3D: name, trackName3DTouched: true });
+      } else {
+        onChange({ ...options, trackName2D: name, trackName2DTouched: true });
+      }
     }
+  };
+
+  const toggleFlag = (flag: 'default' | 'forced', is3D: boolean) => {
+    const next = { ...options };
+    if (flag === 'default') {
+      const v = is3D ? !options.isDefault3D : !options.isDefault2D;
+      if (is3D) {
+        next.isDefault3D = v;
+        if (v) next.isDefault2D = false;
+      } else {
+        next.isDefault2D = v;
+        if (v) next.isDefault3D = false;
+      }
+    } else {
+      const v = is3D ? !options.isForced3D : !options.isForced2D;
+      if (is3D) {
+        next.isForced3D = v;
+        if (v) next.isForced2D = false;
+      } else {
+        next.isForced2D = v;
+        if (v) next.isForced3D = false;
+      }
+    }
+    onChange(next);
   };
 
   const setOverride = (idx: number, name: string) => {
@@ -159,20 +203,39 @@ export function MuxPanel({ tracks, options, onChange }: Props) {
     <>
       {/* Tracks to include — wide card */}
       <div className="card mux-tracks-card">
-        <div className="card-title">Tracks to include</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+          <span className="section-title" style={{ marginBottom: 0 }}>Tracks to include in</span>
+          <input
+            type="text"
+            className="tracks-name-input"
+            style={{ flex: 1, minWidth: 0, fontWeight: 'normal', fontSize: '13px' }}
+            value={options.fileTitle}
+            onChange={e => upd('fileTitle', e.target.value)}
+            placeholder="File title (optional)"
+          />
+        </div>
         {tracks.length > 0 ? (
           <div className="tracks-table">
             {videoTracks.map(t => renderRow(t, false))}
             {audioTracks.map(t => renderRow(t, false))}
             {subTracks.map(t => renderRow(t, false))}
             {/* New 3D ASS subtitle row */}
-            <div className="tracks-row tracks-row--new">
-              <input type="checkbox" checked disabled />
+            <div className={`tracks-row tracks-row--new ${!options.include3D ? 'tracks-row--off' : ''}`}>
+              <input type="checkbox" checked={options.include3D} onChange={e => upd('include3D', e.target.checked)} />
               <span className="tracks-icon"><TrackIcon type="new" /></span>
               <TypeBadge type="new" />
               <span className="tracks-lang">{options.language}</span>
               <span className="tracks-info">3D ASS subtitle (generated)</span>
-              <span className="tracks-name-readonly">{options.trackName || defaultNameForLang(options.language)}</span>
+              <span className="tracks-name-readonly">{options.trackName3D || defaultNameForLang(options.language, true)}</span>
+            </div>
+            {/* New 2D ASS subtitle row */}
+            <div className={`tracks-row tracks-row--new ${!options.include2D ? 'tracks-row--off' : ''}`}>
+              <input type="checkbox" checked={options.include2D} onChange={e => upd('include2D', e.target.checked)} />
+              <span className="tracks-icon"><TrackIcon type="new" /></span>
+              <TypeBadge type="new" />
+              <span className="tracks-lang">{options.language}</span>
+              <span className="tracks-info">2D ASS subtitle (generated)</span>
+              <span className="tracks-name-readonly">{options.trackName2D || defaultNameForLang(options.language, false)}</span>
             </div>
           </div>
         ) : (
@@ -182,11 +245,12 @@ export function MuxPanel({ tracks, options, onChange }: Props) {
         )}
       </div>
 
-      {/* New subtitle metadata */}
+      {/* New subtitles metadata */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
       <div className="card">
-        <div className="card-title">New subtitle</div>
+        <div className="card-title">New subtitles</div>
         <div className="row">
-          <div className="field">
+          <div className="field" style={{ flex: 'none', width: '150px' }}>
             <label>Language</label>
             <select value={options.language} onChange={e => onLanguageChange(e.target.value)}>
               {LANG_CODES.map(l => (
@@ -194,27 +258,53 @@ export function MuxPanel({ tracks, options, onChange }: Props) {
               ))}
             </select>
           </div>
+        </div>
+
+        <div className="row" style={{ marginTop: '12px', alignItems: 'flex-end', opacity: options.include3D ? 1 : 0.4, transition: 'opacity 0.2s' }}>
           <div className="field">
-            <label>
-              Track name
-              {!options.trackNameTouched && (
+            <label style={{ whiteSpace: 'nowrap' }}>
+              <span>3D Track name{' '}
+              {!options.trackName3DTouched && (
                 <span className="field-hint">auto from language</span>
-              )}
+              )}</span>
             </label>
-            <input type="text" value={options.trackName} onChange={e => onTrackNameChange(e.target.value)} />
+            <input type="text" value={options.trackName3D} onChange={e => onTrackNameChange(e.target.value, true)} />
+          </div>
+          <div className="segmented" style={{ marginBottom: '2px' }}>
+            <button
+              className={options.isDefault3D ? 'active' : ''}
+              onClick={() => toggleFlag('default', true)}
+            >Default</button>
+            <button
+              className={options.isForced3D ? 'active' : ''}
+              onClick={() => toggleFlag('forced', true)}
+            >Forced</button>
           </div>
         </div>
-        <div className="segmented">
-          <button
-            className={options.isDefault ? 'active' : ''}
-            onClick={() => upd('isDefault', !options.isDefault)}
-          >Default</button>
-          <button
-            className={options.isForced ? 'active' : ''}
-            onClick={() => upd('isForced', !options.isForced)}
-          >Forced</button>
+
+        <div className="row" style={{ marginTop: '12px', alignItems: 'flex-end', opacity: options.include2D ? 1 : 0.4, transition: 'opacity 0.2s' }}>
+          <div className="field">
+            <label style={{ whiteSpace: 'nowrap' }}>
+              <span>Track name{' '}
+              {!options.trackName2DTouched && (
+                <span className="field-hint">auto from language</span>
+              )}</span>
+            </label>
+            <input type="text" value={options.trackName2D} onChange={e => onTrackNameChange(e.target.value, false)} />
+          </div>
+          <div className="segmented" style={{ marginBottom: '2px' }}>
+            <button
+              className={options.isDefault2D ? 'active' : ''}
+              onClick={() => toggleFlag('default', false)}
+            >Default</button>
+            <button
+              className={options.isForced2D ? 'active' : ''}
+              onClick={() => toggleFlag('forced', false)}
+            >Forced</button>
+          </div>
         </div>
       </div>
+      </div>{/* end config-cards-grid */}
 
     </>
   );

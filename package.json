@@ -1,6 +1,6 @@
 {
   "name": "srt3d-converter",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "author": "Asaf",
   "description": "Convert SRT subtitles to 3D SBS ASS format",
   "private": true,

@@ -294,7 +294,7 @@ export function VideoPanel({
                 </select>
               </div>
             </div>
-            <div className="field">
+            <div className="field" style={{ marginTop: '12px' }}>
               <label>
                 Depth offset
                 <span className="field-value accent">
@@ -307,7 +307,7 @@ export function VideoPanel({
                 onChange={e => upd('depthOffset', parseFloat(e.target.value))}
               />
             </div>
-            <label className="checkbox-label">
+            <label className="checkbox-label" style={{ marginTop: '12px' }}>
               <input
                 type="checkbox" checked={anaglyphPreview}
                 onChange={e => onAnaglyphChange(e.target.checked)}

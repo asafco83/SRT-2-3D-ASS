@@ -9,19 +9,8 @@ import { MuxPanel, type MuxOptions } from './components/MuxPanel.js';
 import appIcon from './assets/app-icon.png';
 
 // Inline pure path helpers — avoids importing Node.js modules in the renderer
-function buildAssPath(videoPath: string, config: { stereoscopyMode: string }): string {
-  const suffix = stereoSuffix(config.stereoscopyMode);
-  return `${videoPath.replace(/\.[^.]+$/, '')}.${suffix}.ass`;
-}
-function buildMkvPath(videoPath: string, config: { stereoscopyMode: string }): string {
-  const suffix = stereoSuffix(config.stereoscopyMode);
-  return `${videoPath.replace(/\.[^.]+$/, '')}.${suffix}.mkv`;
-}
-function stereoSuffix(mode: string): string {
-  return ({
-    'half-sbs': '3D.HalfSBS', 'full-sbs': '3D.SBS',
-    'half-tab': '3D.HalfOU',  'full-tab': '3D.OU',
-  } as Record<string, string>)[mode] ?? '3D';
+function buildMkvPath(videoPath: string): string {
+  return `${videoPath.replace(/\.[^.]+$/, '')}.mkv`;
 }
 
 type Status = { msg: string; kind: 'ok' | 'err' | '' };
@@ -54,11 +43,18 @@ function computeFromAnchors(
 }
 
 const defaultMuxOptions: MuxOptions = {
+  fileTitle:          '',
   language:           'und',
-  trackName:          '3D SBS',
-  trackNameTouched:   false,
-  isDefault:          false,
-  isForced:           false,
+  include3D:          true,
+  trackName3D:        'Subtitle 3D',
+  trackName3DTouched: false,
+  isDefault3D:        true,
+  isForced3D:         false,
+  include2D:          true,
+  trackName2D:        'Subtitle',
+  trackName2DTouched: false,
+  isDefault2D:        false,
+  isForced2D:         false,
   selectedVideo:      new Set(),
   selectedAudio:      new Set(),
   selectedSubs:       new Set(),
@@ -88,6 +84,7 @@ export function App() {
   // Two-anchor calibrator state
   const [selectedCueIndex, setSelectedCueIndex] = useState<number | null>(null);
   const [syncAnchors, setSyncAnchors] = useState<SyncAnchors>({ early: null, late: null });
+  const [showExportMenu, setShowExportMenu] = useState(false);
   // Snapshot of the timing values before the user locked their first anchor —
   // restored automatically when all anchors are cleared, so an accidental lock
   // can be undone without leaving stale calibration in place.
@@ -174,6 +171,7 @@ export function App() {
       setMetadata(meta);
       setTracks(trackList);
       setConfig(c => ({ ...c, ...inferConfigFromMetadata(meta) }));
+      setMuxOpts(o => ({ ...o, fileTitle: meta.title ?? '' }));
       flash(`Video loaded · ${meta.width}×${meta.height} · ${meta.codec} · ${meta.fps}fps`);
     } catch (e) {
       flash(String(e), 'err');
@@ -195,26 +193,31 @@ export function App() {
     }
   }, []);
 
-  const handleExportAss = useCallback(async () => {
+  const handleExportAss = useCallback(async (is2D: boolean) => {
     if (!videoPath) { flash('Open a video first', 'err'); return; }
     if (cues.length === 0) { flash('Open an SRT file first', 'err'); return; }
-    const defaultPath = buildAssPath(videoPath, config);
+    
+    // "file title" "Track name"/"3D Track name".ass
+    const titleBase = muxOpts.fileTitle.trim() || videoPath.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') || 'Subtitle';
+    const trackName = is2D ? muxOpts.trackName2D : muxOpts.trackName3D;
+    
+    const defaultPath = videoPath.replace(/[^\\/]+$/, `${titleBase} ${trackName}.ass`);
     const savePath = await window.api.saveFile(defaultPath, [
       { name: 'ASS Subtitle', extensions: ['ass'] },
     ]);
     if (!savePath) return;
     try {
-      await window.api.exportAss(savePath, config, cues);
+      await window.api.exportAss(savePath, config, cues, is2D);
       flash(`Exported → ${savePath.split(/[\\/]/).pop()}`);
     } catch (e) {
       flash(String(e), 'err');
     }
-  }, [videoPath, config, cues]);
+  }, [videoPath, config, cues, muxOpts]);
 
   const handleExportMkv = useCallback(async () => {
     if (!videoPath) { flash('Open a video first', 'err'); return; }
     if (cues.length === 0) { flash('Open an SRT file first', 'err'); return; }
-    const savePath = await window.api.saveFile(buildMkvPath(videoPath, config), [
+    const savePath = await window.api.saveFile(buildMkvPath(videoPath), [
       { name: 'Matroska', extensions: ['mkv'] },
     ]);
     if (!savePath) return;
@@ -225,12 +228,18 @@ export function App() {
       const req: ExportMkvRequest = {
         videoPath,
         outputPath:   savePath,
+        fileTitle:    muxOpts.fileTitle,
         config,
         cues,
         language:     muxOpts.language,
-        trackName:    muxOpts.trackName,
-        isDefault:    muxOpts.isDefault,
-        isForced:     muxOpts.isForced,
+        include3D:    muxOpts.include3D,
+        trackName3D:  muxOpts.trackName3D,
+        isDefault3D:  muxOpts.isDefault3D,
+        isForced3D:   muxOpts.isForced3D,
+        include2D:    muxOpts.include2D,
+        trackName2D:  muxOpts.trackName2D,
+        isDefault2D:  muxOpts.isDefault2D,
+        isForced2D:   muxOpts.isForced2D,
         includeTracks: {
           video:     Array.from(muxOpts.selectedVideo),
           audio:     Array.from(muxOpts.selectedAudio),
@@ -272,14 +281,24 @@ export function App() {
         <div className="top-bar-divider" />
         <button className="btn btn-secondary" onClick={handleOpenVideo}>Open Video</button>
         <button className="btn btn-secondary" onClick={handleOpenSrt}>Open SRT</button>
-        <span className={`file-chip ${srtName ? '' : 'empty'}`} title={srtName ?? ''}>
-          <span className="file-chip-tag">SRT</span>
-          <span className="file-chip-name">{srtName ?? 'no SRT'}</span>
-        </span>
+
         <div className="spacer" />
-        <button className="btn btn-ghost" onClick={handleExportAss} disabled={!cues.length}>
-          Export ASS
-        </button>
+        <div style={{ position: 'relative', display: 'flex' }}>
+          <select
+            className="btn btn-ghost"
+            disabled={!cues.length}
+            value=""
+            onChange={(e) => {
+              handleExportAss(e.target.value === '2d');
+              e.target.value = '';
+            }}
+            style={{ appearance: 'none', cursor: 'pointer' }}
+          >
+            <option value="" disabled hidden>Export ASS ▾</option>
+            <option value="3d" style={{ background: '#111114', color: '#ECECEE', textAlign: 'left' }}>3D ASS</option>
+            <option value="2d" style={{ background: '#111114', color: '#ECECEE', textAlign: 'left' }}>ASS</option>
+          </select>
+        </div>
         <button className="btn btn-primary export-mkv-btn" onClick={handleExportMkv} disabled={!cues.length || !videoPath || exporting}>
           {exporting && (
             <span
@@ -335,6 +354,11 @@ export function App() {
             className={`config-tab ${tab === 'mkv' ? 'active' : ''}`}
             onClick={() => setTab('mkv')}
           >MKV Mux</button>
+          <div className="spacer" style={{ flex: 1 }} />
+          <span className={`file-chip ${srtName ? '' : 'empty'}`} title={srtName ?? ''} style={{ margin: 'auto 16px auto 0' }}>
+            <span className="file-chip-tag">SRT</span>
+            <span className="file-chip-name">{srtName ?? 'no SRT'}</span>
+          </span>
         </div>
         <div className="config-body">
           {tab === 'subtitle' ? (

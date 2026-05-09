@@ -171,6 +171,7 @@ export function ConfigPanel({
 
   return (
     <>
+      <div className="config-cards-grid">
       {/* Typography (font + size + style + text color) */}
       <div className="card">
         <div className="card-title">Typography</div>
@@ -389,6 +390,7 @@ export function ConfigPanel({
           )}
         </div>
       </div>
+      </div>{/* end config-cards-grid */}
 
       {/* Advanced */}
       <details className="adv">
@@ -410,21 +412,23 @@ export function ConfigPanel({
               />
             </div>
           </div>
-          <div className="field">
-            <label>Char spacing <span className="field-value">{config.spacing}px</span></label>
-            <input type="range" min={-5} max={10} step={0.5}
-              value={config.spacing}
-              onChange={e => upd('spacing', parseFloat(e.target.value))}
-            />
-          </div>
-          <div className="field">
-            <label>Wrap style</label>
-            <select value={config.wrapStyle} onChange={e => upd('wrapStyle', parseInt(e.target.value) as AssConfig['wrapStyle'])}>
-              <option value={0}>0 — Smart</option>
-              <option value={1}>1 — EOL</option>
-              <option value={2}>2 — No wrap</option>
-              <option value={3}>3 — Smart (lower line wider)</option>
-            </select>
+          <div className="row" style={{ alignItems: 'flex-start' }}>
+            <div className="field">
+              <label><span>Char spacing <span className="field-hint">RTL not supported</span></span> <span className="field-value">{config.spacing}px</span></label>
+              <input type="range" min={-5} max={10} step={0.5}
+                value={config.spacing}
+                onChange={e => upd('spacing', parseFloat(e.target.value))}
+              />
+            </div>
+            <div className="field" style={{ justifyContent: 'space-between' }}>
+              <label>Wrap style</label>
+              <select value={config.wrapStyle} onChange={e => upd('wrapStyle', parseInt(e.target.value) as AssConfig['wrapStyle'])}>
+                <option value={0}>0 — Smart</option>
+                <option value={1}>1 — EOL</option>
+                <option value={2}>2 — No wrap</option>
+                <option value={3}>3 — Smart (lower)</option>
+              </select>
+            </div>
           </div>
           <div className="row">
             <div className="field">

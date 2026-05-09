@@ -11,12 +11,15 @@ export interface TrackSelection {
 export interface MuxOptions {
   mkvmergeBin: string;
   videoPath: string;
-  assPath: string;
   outputPath: string;
+  fileTitle?: string;
   language: string;         // ISO 639-2/B, e.g. 'eng'
-  trackName: string;        // name of the new ASS subtitle track
-  isDefault: boolean;
-  isForced: boolean;
+  newSubtitleTracks: {
+    path: string;
+    name: string;
+    isDefault: boolean;
+    isForced: boolean;
+  }[];
   includeTracks: TrackSelection;
   // Map of source-track ID → custom name. Applied to the source file via
   // mkvmerge's `--track-name N:NAME` so existing tracks can be renamed at
@@ -30,10 +33,14 @@ export interface MuxOptions {
 
 // Pure arg builder — testable without a binary.
 export function buildMuxArgs(opts: MuxOptions, safePath: string): string[] {
-  const { videoPath, assPath, language, trackName, isDefault, isForced,
+  const { videoPath, fileTitle, newSubtitleTracks, language,
           includeTracks, trackNameOverrides, onProgress } = opts;
   const args: string[] = ['--output', safePath];
   if (onProgress) args.push('--gui-mode');
+
+  if (fileTitle !== undefined && fileTitle.trim() !== '') {
+    args.push('--title', fileTitle.trim());
+  }
 
   if (includeTracks.video.length > 0) {
     args.push('--video-tracks', includeTracks.video.join(','));
@@ -62,13 +69,15 @@ export function buildMuxArgs(opts: MuxOptions, safePath: string): string[] {
 
   args.push(videoPath);
 
-  args.push(
-    '--language', `0:${language}`,
-    '--track-name', `0:${trackName}`,
-    '--default-track', `0:${isDefault ? 'yes' : 'no'}`,
-    '--forced-track', `0:${isForced ? 'yes' : 'no'}`,
-    assPath,
-  );
+  for (const track of newSubtitleTracks) {
+    args.push(
+      '--language', `0:${language}`,
+      '--track-name', `0:${track.name}`,
+      '--default-track', `0:${track.isDefault ? 'yes' : 'no'}`,
+      '--forced-track', `0:${track.isForced ? 'yes' : 'no'}`,
+      track.path,
+    );
+  }
 
   return args;
 }

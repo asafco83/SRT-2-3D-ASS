@@ -20,8 +20,8 @@ const api = {
   readSrt: (srtPath: string): Promise<SrtCue[]> =>
     ipcRenderer.invoke('srt:read', srtPath),
 
-  exportAss: (outputPath: string, config: AssConfig, cues: SrtCue[]): Promise<void> =>
-    ipcRenderer.invoke('ass:export', outputPath, config, cues),
+  exportAss: (outputPath: string, config: AssConfig, cues: SrtCue[], is2D?: boolean): Promise<void> =>
+    ipcRenderer.invoke('ass:export', outputPath, config, cues, is2D),
 
   muxToMkv: (req: MuxRequest): Promise<string> =>
     ipcRenderer.invoke('mkv:mux', req),

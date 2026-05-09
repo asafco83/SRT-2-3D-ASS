@@ -25,9 +25,12 @@ function resolveIcon(): string | undefined {
 }
 
 function createWindow(): BrowserWindow {
+  const { height: screenH } = require('electron').screen.getPrimaryDisplay().workAreaSize;
+  const winHeight = Math.round(screenH * 0.85);
+
   const win = new BrowserWindow({
     width: 720,
-    height: 800,
+    height: winHeight,
     minWidth: 600,
     minHeight: 600,
     backgroundColor: '#1a1a2e',

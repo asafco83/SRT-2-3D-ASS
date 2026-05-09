@@ -302,14 +302,16 @@ body {
 .config-body {
   flex: 1; overflow-y: auto; min-height: 0;
   padding: 14px;
+  display: flex; flex-direction: column;
+  gap: 12px;
+}
+
+.config-cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 12px;
   align-content: start;
 }
-
-/* Make the advanced details span full width inside the grid */
-.config-body > details.adv { grid-column: 1 / -1; }
 
 /* ── Timeline ────────────────────────────────────────────────── */
 
@@ -686,7 +688,6 @@ details.adv {
   border: 1px solid var(--border-soft);
   border-radius: var(--r-md);
   background: var(--surface-2);
-  overflow: hidden;
 }
 details.adv > summary {
   padding: 12px 14px;
@@ -710,8 +711,7 @@ details.adv > summary::before {
 details.adv[open] > summary::before { transform: rotate(90deg); }
 details.adv > .adv-body {
   padding: 14px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  display: flex; flex-direction: column;
   gap: 14px;
   border-top: 1px solid var(--border-soft);
 }

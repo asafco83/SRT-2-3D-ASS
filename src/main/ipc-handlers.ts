@@ -40,8 +40,12 @@ export function registerIpcHandlers(): void {
     return parseSrt(raw);
   });
 
-  ipcMain.handle('ass:export', async (_e, outputPath: string, config: AssConfig, cues: SrtCue[]) => {
-    await exportAss(outputPath, config, cues);
+  ipcMain.handle('ass:export', async (_e, outputPath: string, config: AssConfig, cues: SrtCue[], is2D?: boolean) => {
+    if (is2D) {
+      await exportAss(outputPath, config, cues, false, 'left', true);
+    } else {
+      await exportAss(outputPath, config, cues);
+    }
   });
 
   ipcMain.handle('mkv:mux', async (_e, req: MuxRequest) => {
@@ -52,17 +56,36 @@ export function registerIpcHandlers(): void {
   // source tracks, then delete the temp ASS regardless of outcome. Streams
   // mkvmerge progress back to the renderer via 'mkv:export-progress' events.
   ipcMain.handle('mkv:export', async (e, req: ExportMkvRequest) => {
-    const tempAss = join(tmpdir(), `srt3d-export-${process.pid}-${Date.now()}.ass`);
+    const tempAss3D = req.include3D ? join(tmpdir(), `srt3d-export-${process.pid}-${Date.now()}-3d.ass`) : null;
+    const tempAss2D = req.include2D ? join(tmpdir(), `srt3d-export-${process.pid}-${Date.now()}-2d.ass`) : null;
+
     try {
-      await exportAss(tempAss, req.config, req.cues);
+      const newSubtitleTracks = [];
+      if (tempAss3D) {
+        await exportAss(tempAss3D, req.config, req.cues);
+        newSubtitleTracks.push({
+          path: tempAss3D,
+          name: req.trackName3D,
+          isDefault: req.isDefault3D,
+          isForced: req.isForced3D,
+        });
+      }
+      if (tempAss2D) {
+        await exportAss(tempAss2D, req.config, req.cues, false, 'left', true);
+        newSubtitleTracks.push({
+          path: tempAss2D,
+          name: req.trackName2D,
+          isDefault: req.isDefault2D,
+          isForced: req.isForced2D,
+        });
+      }
+
       return await muxToMkv({
         videoPath:           req.videoPath,
-        assPath:             tempAss,
         outputPath:          req.outputPath,
+        fileTitle:           req.fileTitle,
         language:            req.language,
-        trackName:           req.trackName,
-        isDefault:           req.isDefault,
-        isForced:            req.isForced,
+        newSubtitleTracks,
         includeTracks:       req.includeTracks,
         trackNameOverrides:  req.trackNameOverrides,
         mkvmergeBin:         getBinPath('mkvmerge'),
@@ -71,7 +94,8 @@ export function registerIpcHandlers(): void {
         },
       });
     } finally {
-      try { unlinkSync(tempAss); } catch { /* best-effort cleanup */ }
+      if (tempAss3D) try { unlinkSync(tempAss3D); } catch {}
+      if (tempAss2D) try { unlinkSync(tempAss2D); } catch {}
     }
   });
 }

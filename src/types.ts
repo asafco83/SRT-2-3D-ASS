@@ -8,6 +8,7 @@ export interface VideoMetadata {
   stereoMode: string | undefined;
   eyeOrder: 'left-first' | 'right-first';
   detectedSbsType: 'half-sbs' | 'full-sbs' | 'unknown';
+  title?: string;
 }
 
 export interface SrtCue {
@@ -85,10 +86,14 @@ export interface MuxRequest {
   videoPath: string;
   assPath: string;
   outputPath: string;
+  fileTitle?: string;
   language: string;
-  trackName: string;
-  isDefault: boolean;
-  isForced: boolean;
+  newSubtitleTracks: {
+    path: string;
+    name: string;
+    isDefault: boolean;
+    isForced: boolean;
+  }[];
   includeTracks: {
     video: number[];
     audio: number[];
@@ -103,12 +108,18 @@ export interface MuxRequest {
 export interface ExportMkvRequest {
   videoPath: string;
   outputPath: string;
+  fileTitle?: string;
   config: AssConfig;
   cues: SrtCue[];
   language: string;
-  trackName: string;
-  isDefault: boolean;
-  isForced: boolean;
+  include3D: boolean;
+  trackName3D: string;
+  isDefault3D: boolean;
+  isForced3D: boolean;
+  include2D: boolean;
+  trackName2D: string;
+  isDefault2D: boolean;
+  isForced2D: boolean;
   includeTracks: {
     video: number[];
     audio: number[];

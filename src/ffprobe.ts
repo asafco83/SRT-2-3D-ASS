@@ -54,6 +54,9 @@ export function parseProbeJson(json: string): VideoMetadata {
 
   // Duration may live in format.duration (seconds) or video.duration (seconds)
   const format = (data.format ?? {}) as Record<string, unknown>;
+  const formatTags = (format['tags'] ?? {}) as Record<string, string>;
+  const title = formatTags['title'] || formatTags['TITLE'] || undefined;
+
   const durationSec = Number(format['duration'] ?? video['duration'] ?? 0);
   const durationMs = isFinite(durationSec) && durationSec > 0 ? Math.round(durationSec * 1000) : 0;
 
@@ -67,6 +70,7 @@ export function parseProbeJson(json: string): VideoMetadata {
     stereoMode,
     eyeOrder,
     detectedSbsType: inferSbsType(width, height, dar),
+    title,
   };
 }
 
