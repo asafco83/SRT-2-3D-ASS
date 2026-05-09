@@ -21,6 +21,7 @@ export default defineConfig({
   },
   renderer: {
     plugins: [react()],
+    publicDir: resolve(__dirname, 'resources'),
     build: {
       rollupOptions: {
         input: { index: resolve(__dirname, 'src/renderer/index.html') },

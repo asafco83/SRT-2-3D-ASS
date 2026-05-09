@@ -6,6 +6,7 @@ import { VideoPanel } from './components/VideoPanel.js';
 import { ConfigPanel } from './components/ConfigPanel.js';
 import { CueTimeline } from './components/CueTimeline.js';
 import { MuxPanel, type MuxOptions } from './components/MuxPanel.js';
+import { AboutDialog } from './components/AboutDialog.js';
 import appIcon from './assets/app-icon.png';
 
 // Inline pure path helpers — avoids importing Node.js modules in the renderer
@@ -273,6 +274,7 @@ export function App() {
 
   return (
     <div id="root">
+      <AboutDialog />
       {/* Top bar — status messages float as toasts (see below) so the
           header stays a fixed-width row of buttons. The SRT chip shrinks
           first when space is tight; everything else is flex-shrink: 0. */}

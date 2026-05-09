@@ -37,6 +37,17 @@ const api = {
     return () => ipcRenderer.removeListener('mkv:export-progress', listener);
   },
 
+  // App info — product name & version from package.json via main process
+  getAppInfo: (): Promise<{ productName: string; version: string }> =>
+    ipcRenderer.invoke('app:info'),
+
+  // Fired when the user clicks Help → About in the native menu
+  onShowAbout: (cb: () => void): (() => void) => {
+    const listener = () => cb();
+    ipcRenderer.on('show-about', listener);
+    return () => ipcRenderer.removeListener('show-about', listener);
+  },
+
   // ── Embedded mpv player ──────────────────────────────────────────────────
   // The renderer drives an mpv process running in a child OS window placed
   // over a placeholder div. All control is via IPC; mpv renders directly to

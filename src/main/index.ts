@@ -1,4 +1,4 @@
-import { app, BrowserWindow, session, ipcMain } from 'electron';
+import { app, BrowserWindow, session, ipcMain, Menu, shell } from 'electron';
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
 import { registerIpcHandlers } from './ipc-handlers.js';
@@ -57,6 +57,14 @@ function createWindow(): BrowserWindow {
 
   win.on('closed', () => { mpv.close().catch(() => { /**/ }); });
 
+  // Open external links (like GitHub) in the system browser
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('https://') || url.startsWith('http://')) {
+      shell.openExternal(url);
+    }
+    return { action: 'deny' };
+  });
+
   return win;
 }
 
@@ -90,9 +98,36 @@ function registerMpvIpc(): void {
   });
 }
 
+function buildAppMenu(win: BrowserWindow): Menu {
+  const template: Electron.MenuItemConstructorOptions[] = [
+    { role: 'fileMenu' },
+    { role: 'editMenu' },
+    { role: 'viewMenu' },
+    { role: 'windowMenu' },
+    {
+      label: 'Help',
+      submenu: [
+        {
+          label: 'About',
+          click: () => {
+            win.webContents.send('show-about');
+          },
+        },
+      ],
+    },
+  ];
+  return Menu.buildFromTemplate(template);
+}
+
 app.whenReady().then(() => {
   registerIpcHandlers();
   registerMpvIpc();
+
+  // Expose app name + version to the renderer
+  ipcMain.handle('app:info', () => ({
+    productName: 'SRT 2 3D ASS',
+    version: app.getVersion(),
+  }));
 
   if (!process.env['ELECTRON_RENDERER_URL']) {
     session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
@@ -109,10 +144,14 @@ app.whenReady().then(() => {
     callback((permission as string) === 'local-fonts');
   });
 
-  createWindow();
+  const win = createWindow();
+  Menu.setApplicationMenu(buildAppMenu(win));
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) {
+      const newWin = createWindow();
+      Menu.setApplicationMenu(buildAppMenu(newWin));
+    }
   });
 });
 
