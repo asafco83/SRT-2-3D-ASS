@@ -3,21 +3,25 @@ import assert from 'node:assert/strict';
 import { writeFileSync, unlinkSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { buildMuxArgs, muxToMkv } from '../src/mkvmerge.js';
+import { buildMuxArgs, muxToMkv, MuxOptions } from '../src/mkvmerge.js';
 
-function baseOpts(overrides: Partial<Parameters<typeof buildMuxArgs>[0]> = {}) {
+function baseOpts(overrides: Partial<MuxOptions> = {}): MuxOptions {
   return {
     mkvmergeBin: 'mkvmerge',
     videoPath: '/src/movie.mkv',
-    assPath: '/src/movie.3D.HalfSBS.ass',
     outputPath: '/out/movie.3D.HalfSBS.mkv',
     language: 'eng',
-    trackName: 'English 3D SBS',
-    isDefault: false,
-    isForced: false,
+    newSubtitleTracks: [
+      {
+        path: '/src/movie.3D.HalfSBS.ass',
+        name: 'English 3D SBS',
+        isDefault: false,
+        isForced: false,
+      }
+    ],
     includeTracks: { video: [], audio: [1], subtitles: [] },
     ...overrides,
-  };
+  } as MuxOptions;
 }
 
 // ── buildMuxArgs ──────────────────────────────────────────────────────────────
@@ -57,13 +61,16 @@ test('buildMuxArgs: source video file appears before ASS file', () => {
   const opts = baseOpts();
   const args = buildMuxArgs(opts, '/o.mkv');
   const vidIdx = args.indexOf(opts.videoPath);
-  const assIdx = args.indexOf(opts.assPath);
+  const assIdx = args.indexOf(opts.newSubtitleTracks[0].path);
   assert.ok(vidIdx !== -1 && assIdx !== -1);
   assert.ok(vidIdx < assIdx, 'source video must appear before ASS track');
 });
 
 test('buildMuxArgs: language and track-name for ASS track', () => {
-  const args = buildMuxArgs(baseOpts({ language: 'heb', trackName: 'Hebrew 3D' }), '/o.mkv');
+  const args = buildMuxArgs(baseOpts({
+    language: 'heb',
+    newSubtitleTracks: [{ path: '/s.ass', name: 'Hebrew 3D', isDefault: false, isForced: false }]
+  }), '/o.mkv');
   const langIdx = args.indexOf('--language');
   assert.ok(langIdx !== -1);
   assert.equal(args[langIdx + 1], '0:heb');
@@ -72,8 +79,12 @@ test('buildMuxArgs: language and track-name for ASS track', () => {
 });
 
 test('buildMuxArgs: default-track yes/no', () => {
-  const argsYes = buildMuxArgs(baseOpts({ isDefault: true }), '/o.mkv');
-  const argsNo = buildMuxArgs(baseOpts({ isDefault: false }), '/o.mkv');
+  const argsYes = buildMuxArgs(baseOpts({
+    newSubtitleTracks: [{ path: '/s.ass', name: 'N', isDefault: true, isForced: false }]
+  }), '/o.mkv');
+  const argsNo = buildMuxArgs(baseOpts({
+    newSubtitleTracks: [{ path: '/s.ass', name: 'N', isDefault: false, isForced: false }]
+  }), '/o.mkv');
   const yIdx = argsYes.indexOf('--default-track');
   const nIdx = argsNo.indexOf('--default-track');
   assert.equal(argsYes[yIdx + 1], '0:yes');
@@ -81,7 +92,9 @@ test('buildMuxArgs: default-track yes/no', () => {
 });
 
 test('buildMuxArgs: forced-track yes/no', () => {
-  const argsYes = buildMuxArgs(baseOpts({ isForced: true }), '/o.mkv');
+  const argsYes = buildMuxArgs(baseOpts({
+    newSubtitleTracks: [{ path: '/s.ass', name: 'N', isDefault: false, isForced: true }]
+  }), '/o.mkv');
   assert.ok(argsYes.includes('0:yes'));
 });
 
@@ -132,12 +145,9 @@ test('muxToMkv: integration with real mkvmerge', { skip: MKVMERGE_PATH === null 
       () => muxToMkv({
         mkvmergeBin: MKVMERGE_PATH!,
         videoPath: fakeMkv,   // doesn't exist → mkvmerge exits 2
-        assPath: fakeAss,
+        newSubtitleTracks: [{ path: fakeAss, name: 'Test', isDefault: false, isForced: false }],
         outputPath: outMkv,
         language: 'eng',
-        trackName: 'Test',
-        isDefault: false,
-        isForced: false,
         includeTracks: { video: [], audio: [], subtitles: [] },
       }),
       /mkvmerge failed/,
