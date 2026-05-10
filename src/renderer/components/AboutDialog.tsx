@@ -1,5 +1,6 @@
 /// <reference path="../env.d.ts" />
 import { useState, useEffect, useCallback } from 'react';
+import appIcon from '../../../resources/icon.png';
 
 export function AboutDialog() {
   const [open, setOpen] = useState(false);
@@ -42,7 +43,7 @@ export function AboutDialog() {
       <div className="about-dialog" onClick={(e) => e.stopPropagation()}>
         <button className="about-close" onClick={close} aria-label="Close">✕</button>
 
-        <img src="/icon.png" className="about-logo" alt="App Logo" />
+        <img src={appIcon} className="about-logo" alt="App Logo" />
 
         <h2 className="about-name">{displayName}</h2>
 
