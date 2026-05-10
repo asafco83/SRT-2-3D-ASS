@@ -79,6 +79,8 @@ export function generateAss(
     'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text';
   const dialogueLines: string[] = ['[Events]', eventsHeader];
 
+  const isNon3D = config.stereoscopyMode === 'none';
+
   for (const cue of cues) {
     let startMs = Math.round(cue.startMs * config.timingSpeedMultiplier) + config.timingOffsetMs;
     let endMs = Math.round(cue.endMs * config.timingSpeedMultiplier) + config.timingOffsetMs;
@@ -88,6 +90,17 @@ export function generateAss(
     const start = msToAssTime(startMs);
     const end = msToAssTime(endMs);
     const text = cue.lines.join('\\N');
+
+    if (isNon3D) {
+      // Non-3D: full-frame, single dialogue, standard alignment+marginV.
+      // Style line carries everything; we only inline-tag the scale to stay
+      // consistent with the 3D paths (which override scale via \fscx/\fscy).
+      const scaleTagsPlain = `{\\fscx${effectiveScaleX}\\fscy${effectiveScaleY}}`;
+      dialogueLines.push(
+        `Dialogue: 0,${start},${end},Default,,0,0,0,,${scaleTagsPlain}${text}`,
+      );
+      continue;
+    }
 
     const isTab = config.stereoscopyMode === 'half-tab' || config.stereoscopyMode === 'full-tab';
     

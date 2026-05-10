@@ -56,7 +56,9 @@ export function registerIpcHandlers(): void {
   // source tracks, then delete the temp ASS regardless of outcome. Streams
   // mkvmerge progress back to the renderer via 'mkv:export-progress' events.
   ipcMain.handle('mkv:export', async (e, req: ExportMkvRequest) => {
-    const tempAss3D = req.include3D ? join(tmpdir(), `srt3d-export-${process.pid}-${Date.now()}-3d.ass`) : null;
+    const isNon3D = req.config.stereoscopyMode === 'none';
+    // Non-3D: never mux a 3D track regardless of include3D.
+    const tempAss3D = !isNon3D && req.include3D ? join(tmpdir(), `srt3d-export-${process.pid}-${Date.now()}-3d.ass`) : null;
     const tempAss2D = req.include2D ? join(tmpdir(), `srt3d-export-${process.pid}-${Date.now()}-2d.ass`) : null;
 
     try {
@@ -71,7 +73,10 @@ export function registerIpcHandlers(): void {
         });
       }
       if (tempAss2D) {
-        await exportAss(tempAss2D, req.config, req.cues, false, 'left', true);
+        // Non-3D mode renders full-frame (generator short-circuits on
+        // mode='none'); 3D-source 2D uses the half-frame single-eye layout.
+        if (isNon3D) await exportAss(tempAss2D, req.config, req.cues, false, undefined, false);
+        else         await exportAss(tempAss2D, req.config, req.cues, false, 'left', true);
         newSubtitleTracks.push({
           path: tempAss2D,
           name: req.trackName2D,

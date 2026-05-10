@@ -226,6 +226,7 @@ export function App() {
     setExportPercent(0);
     const unsubscribe = window.api.onMkvExportProgress((p) => setExportPercent(p));
     try {
+      const isNon3D = config.stereoscopyMode === 'none';
       const req: ExportMkvRequest = {
         videoPath,
         outputPath:   savePath,
@@ -233,7 +234,7 @@ export function App() {
         config,
         cues,
         language:     muxOpts.language,
-        include3D:    muxOpts.include3D,
+        include3D:    !isNon3D && muxOpts.include3D,
         trackName3D:  muxOpts.trackName3D,
         isDefault3D:  muxOpts.isDefault3D,
         isForced3D:   muxOpts.isForced3D,
@@ -285,22 +286,30 @@ export function App() {
         <button className="btn btn-secondary" onClick={handleOpenSrt}>Open SRT</button>
 
         <div className="spacer" />
-        <div style={{ position: 'relative', display: 'flex' }}>
-          <select
+        {config.stereoscopyMode === 'none' ? (
+          <button
             className="btn btn-ghost"
             disabled={!cues.length}
-            value=""
-            onChange={(e) => {
-              handleExportAss(e.target.value === '2d');
-              e.target.value = '';
-            }}
-            style={{ appearance: 'none', cursor: 'pointer' }}
-          >
-            <option value="" disabled hidden>Export ASS ▾</option>
-            <option value="3d" style={{ background: '#111114', color: '#ECECEE', textAlign: 'left' }}>3D ASS</option>
-            <option value="2d" style={{ background: '#111114', color: '#ECECEE', textAlign: 'left' }}>ASS</option>
-          </select>
-        </div>
+            onClick={() => handleExportAss(true)}
+          >Export ASS</button>
+        ) : (
+          <div style={{ position: 'relative', display: 'flex' }}>
+            <select
+              className="btn btn-ghost"
+              disabled={!cues.length}
+              value=""
+              onChange={(e) => {
+                handleExportAss(e.target.value === '2d');
+                e.target.value = '';
+              }}
+              style={{ appearance: 'none', cursor: 'pointer' }}
+            >
+              <option value="" disabled hidden>Export ASS ▾</option>
+              <option value="3d" style={{ background: '#111114', color: '#ECECEE', textAlign: 'left' }}>3D ASS</option>
+              <option value="2d" style={{ background: '#111114', color: '#ECECEE', textAlign: 'left' }}>ASS</option>
+            </select>
+          </div>
+        )}
         <button className="btn btn-primary export-mkv-btn" onClick={handleExportMkv} disabled={!cues.length || !videoPath || exporting}>
           {exporting && (
             <span
@@ -376,7 +385,7 @@ export function App() {
               onResetAnchors={resetAnchors}
             />
           ) : (
-            <MuxPanel tracks={tracks} options={muxOpts} onChange={setMuxOpts} />
+            <MuxPanel tracks={tracks} options={muxOpts} onChange={setMuxOpts} stereoscopyMode={config.stereoscopyMode} />
           )}
         </div>
       </div>

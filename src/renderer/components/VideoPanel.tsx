@@ -137,6 +137,8 @@ export function VideoPanel({
   const upd = <K extends keyof AssConfig>(key: K, value: AssConfig[K]) =>
     onConfigChange({ ...config, [key]: value });
 
+  const isNon3D = config.stereoscopyMode === 'none';
+
   const userSeek = (ms: number) => {
     onSeek(ms);
     window.api.mpv.seek(ms).catch(() => { /**/ });
@@ -269,7 +271,7 @@ export function VideoPanel({
           </div>
 
           <div className="player-deck-section">
-            <div className="deck-label">3D · Stereo</div>
+            <div className="deck-label">Video Interpolation</div>
             <div className="row">
               <div className="field">
                 <label>Mode</label>
@@ -281,6 +283,8 @@ export function VideoPanel({
                   <option value="full-sbs">Full SBS</option>
                   <option value="half-tab">Half T&B</option>
                   <option value="full-tab">Full T&B</option>
+                  <option disabled>──────────</option>
+                  <option value="none">Non-3D</option>
                 </select>
               </div>
               <div className="field">
@@ -288,13 +292,14 @@ export function VideoPanel({
                 <select
                   value={config.viewOrder}
                   onChange={e => upd('viewOrder', e.target.value as AssConfig['viewOrder'])}
+                  disabled={isNon3D}
                 >
                   <option value="left-first">Left first</option>
                   <option value="right-first">Right first</option>
                 </select>
               </div>
             </div>
-            <div className="field" style={{ marginTop: '12px' }}>
+            <div className="field" style={{ marginTop: '12px', opacity: isNon3D ? 0.4 : 1 }}>
               <label>
                 Depth offset
                 <span className="field-value accent">
@@ -304,12 +309,14 @@ export function VideoPanel({
               <input
                 type="range" min={-20} max={20} step={0.5}
                 value={config.depthOffset}
+                disabled={isNon3D}
                 onChange={e => upd('depthOffset', parseFloat(e.target.value))}
               />
             </div>
-            <label className="checkbox-label" style={{ marginTop: '12px' }}>
+            <label className="checkbox-label" style={{ marginTop: '12px', opacity: isNon3D ? 0.4 : 1 }}>
               <input
-                type="checkbox" checked={anaglyphPreview}
+                type="checkbox" checked={anaglyphPreview && !isNon3D}
+                disabled={isNon3D}
                 onChange={e => onAnaglyphChange(e.target.checked)}
               />
               Anaglyph preview (red / cyan)

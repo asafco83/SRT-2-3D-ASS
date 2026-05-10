@@ -265,7 +265,12 @@ export class StandaloneMpv {
     // (with depth shift) rather than positioned at the full-SBS-frame
     // eye-quarters.
     const visibleEye: 'left' | 'right' = this.eyeOrder === 'right-first' ? 'right' : 'left';
-    if (this.anaglyph) {
+    const isNon3D = this.mode === 'none';
+    // Non-3D: full-frame plain ASS, anaglyph never applies.
+    if (isNon3D) {
+      this.tempAssPath = join(tmpdir(), `srt3d-mpv-${stamp}.ass`);
+      await exportAss(this.tempAssPath, this.currentConfig, this.currentCues, false, undefined, false);
+    } else if (this.anaglyph) {
       this.tempAssRedPath  = join(tmpdir(), `srt3d-mpv-red-${stamp}.ass`);
       this.tempAssCyanPath = join(tmpdir(), `srt3d-mpv-cyan-${stamp}.ass`);
       await exportAss(this.tempAssRedPath,  this.currentConfig, this.currentCues, true, 'left',  true);

@@ -42,6 +42,10 @@ export class MpvController {
       '--no-input-default-bindings',
       '--input-vo-keyboard=no',
       '--keep-open=yes',
+      // Don't auto-load sidecar subtitle files — the editor renders only
+      // the user-loaded SRT through the lavfi subtitles filter.
+      '--sub-auto=no',
+      '--sid=no',
       '--msg-level=all=v',
       '--autofit=50%',
     ];

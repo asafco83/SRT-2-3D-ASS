@@ -19,7 +19,7 @@ export interface SrtCue {
   lines: string[];
 }
 
-export type StereoscopyMode = 'half-sbs' | 'full-sbs' | 'half-tab' | 'full-tab';
+export type StereoscopyMode = 'half-sbs' | 'full-sbs' | 'half-tab' | 'full-tab' | 'none';
 export type ViewOrder = 'left-first' | 'right-first';
 export type Encoding = 'utf-8' | 'utf-8-bom';
 

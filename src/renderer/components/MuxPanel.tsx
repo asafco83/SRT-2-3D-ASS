@@ -1,5 +1,5 @@
 import type React from 'react';
-import type { TrackInfo } from '../../types.js';
+import type { TrackInfo, StereoscopyMode } from '../../types.js';
 
 export interface MuxOptions {
   language: string;
@@ -28,6 +28,7 @@ interface Props {
   tracks: TrackInfo[];
   options: MuxOptions;
   onChange: (next: MuxOptions) => void;
+  stereoscopyMode: StereoscopyMode;
 }
 
 const LANG_CODES = [
@@ -89,7 +90,8 @@ function TypeBadge({ type }: { type: TrackInfo['type'] | 'new' }) {
   return <span className={`mux-badge mux-badge--${type}`}>{tag}</span>;
 }
 
-export function MuxPanel({ tracks, options, onChange }: Props) {
+export function MuxPanel({ tracks, options, onChange, stereoscopyMode }: Props) {
+  const isNon3D = stereoscopyMode === 'none';
   const upd = <K extends keyof MuxOptions>(key: K, value: MuxOptions[K]) =>
     onChange({ ...options, [key]: value });
 
@@ -219,22 +221,24 @@ export function MuxPanel({ tracks, options, onChange }: Props) {
             {videoTracks.map(t => renderRow(t, false))}
             {audioTracks.map(t => renderRow(t, false))}
             {subTracks.map(t => renderRow(t, false))}
-            {/* New 3D ASS subtitle row */}
-            <div className={`tracks-row tracks-row--new ${!options.include3D ? 'tracks-row--off' : ''}`}>
-              <input type="checkbox" checked={options.include3D} onChange={e => upd('include3D', e.target.checked)} />
-              <span className="tracks-icon"><TrackIcon type="new" /></span>
-              <TypeBadge type="new" />
-              <span className="tracks-lang">{options.language}</span>
-              <span className="tracks-info">3D ASS subtitle (generated)</span>
-              <span className="tracks-name-readonly">{options.trackName3D || defaultNameForLang(options.language, true)}</span>
-            </div>
+            {/* New 3D ASS subtitle row — hidden in Non-3D mode */}
+            {!isNon3D && (
+              <div className={`tracks-row tracks-row--new ${!options.include3D ? 'tracks-row--off' : ''}`}>
+                <input type="checkbox" checked={options.include3D} onChange={e => upd('include3D', e.target.checked)} />
+                <span className="tracks-icon"><TrackIcon type="new" /></span>
+                <TypeBadge type="new" />
+                <span className="tracks-lang">{options.language}</span>
+                <span className="tracks-info">3D ASS subtitle (generated)</span>
+                <span className="tracks-name-readonly">{options.trackName3D || defaultNameForLang(options.language, true)}</span>
+              </div>
+            )}
             {/* New 2D ASS subtitle row */}
             <div className={`tracks-row tracks-row--new ${!options.include2D ? 'tracks-row--off' : ''}`}>
               <input type="checkbox" checked={options.include2D} onChange={e => upd('include2D', e.target.checked)} />
               <span className="tracks-icon"><TrackIcon type="new" /></span>
               <TypeBadge type="new" />
               <span className="tracks-lang">{options.language}</span>
-              <span className="tracks-info">2D ASS subtitle (generated)</span>
+              <span className="tracks-info">{isNon3D ? 'ASS subtitle (generated)' : '2D ASS subtitle (generated)'}</span>
               <span className="tracks-name-readonly">{options.trackName2D || defaultNameForLang(options.language, false)}</span>
             </div>
           </div>
@@ -260,6 +264,7 @@ export function MuxPanel({ tracks, options, onChange }: Props) {
           </div>
         </div>
 
+        {!isNon3D && (
         <div className="row" style={{ marginTop: '12px', alignItems: 'flex-end', opacity: options.include3D ? 1 : 0.4, transition: 'opacity 0.2s' }}>
           <div className="field">
             <label style={{ whiteSpace: 'nowrap' }}>
@@ -281,6 +286,7 @@ export function MuxPanel({ tracks, options, onChange }: Props) {
             >Forced</button>
           </div>
         </div>
+        )}
 
         <div className="row" style={{ marginTop: '12px', alignItems: 'flex-end', opacity: options.include2D ? 1 : 0.4, transition: 'opacity 0.2s' }}>
           <div className="field">
